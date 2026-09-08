@@ -1,0 +1,252 @@
+// server.c
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+#include <time.h>
+#include <pthread.h>
+#include "db.h"
+#include "common.h"
+#include "config.h"
+#include "controllers.h"
+
+#define PORT 8080
+#define BUFFER_SIZE 4096
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define RESET   "\033[0m"
+
+int socket_fd; 
+struct sockaddr_in server_addr; 
+
+struct sockaddr_in client_addr; 
+socklen_t addrlen = sizeof(client_addr) ; 
+
+extern struct route routes[];
+extern int NUM_ROUTES_VALUE;
+
+
+void print_log(const char *message)
+{
+    time_t currentTime = time(NULL);
+    char *time_str = ctime(&currentTime);
+
+    if (time_str == NULL) {
+        return;
+    }
+
+    time_str[strcspn(time_str, "\n")] = '\0';
+
+    printf("[%s] %s\n", time_str, message);
+    fflush(stdout);
+}
+
+void handle_shutdown(int sig) {
+    print_log("Shutting down server...");
+    close(socket_fd);
+    exit(0);
+}
+
+void start_server() {
+    socket_fd = socket(AF_INET , SOCK_STREAM, 0) ; 
+    print_log("Starting socket now ..."); 
+    if(socket_fd < 0) { 
+        perror("Cannot create a server socker" ) ; 
+        exit(1);
+    }
+    print_log("Socket started successfuly"); 
+    
+    server_addr.sin_family = AF_INET; 
+    server_addr.sin_port = htons(PORT) ; 
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    print_log("Binding socket to address and port now ..."); 
+    if(bind(socket_fd , (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0){
+        perror("Bind socker failed"); 
+        exit(1);
+    }
+    print_log("Socket binded to ip and port"); 
+
+    if(listen(socket_fd, 5) < 0){
+        perror("Listen failed");
+        exit(1);
+    }
+    print_log("Socket listening now ...");
+
+}
+void print_startup_banner(int port, const char* base_dir) {
+    time_t now = time(NULL);
+    char* time_str = ctime(&now);
+    time_str[strcspn(time_str, "\n")] = '\0';
+
+    printf("\n");
+    printf(GREEN "====================================================\n" RESET);
+    printf(GREEN "*     C HTTP Server\n" RESET);
+    printf(GREEN "====================================================\n" RESET);
+    printf(BLUE "*     Status       : running\n" RESET);
+    printf(BLUE "*     Port         : %d\n" RESET, port);
+    printf(BLUE "*     Serving from : %s\n" RESET, base_dir);
+    printf(BLUE "*     URL          : http://0.0.0.0:%d/\n" RESET, port);
+    printf(BLUE "*     PID          : %d\n" RESET, getpid());
+    printf(BLUE "*     Started at   : %s\n" RESET, time_str);
+    printf(BLUE "*     Author at   : Mohamed EL AFIA\n" RESET);
+    printf(GREEN "====================================================\n" RESET);
+    printf(GREEN "*     Press Ctrl+C to stop\n" RESET);
+    printf(GREEN "====================================================\n\n" RESET);
+    fflush(stdout);
+}
+
+
+struct http_request* parse_request(char * request_data) { 
+    http_request* parsed_request = malloc(sizeof(http_request));; 
+    if (!parsed_request) {
+        return NULL; // handle allocation failure
+    }
+
+    char* first_line = strtok(request_data , "\r\n");
+    if (!first_line) {
+        free(parsed_request);
+        return NULL;
+    }
+
+    char* method = strtok(first_line, " ");
+    char* path = strtok(NULL, " ");
+
+    while(*path == ' ' ) ++path; 
+
+    int len_path = strlen(path); 
+    while(len_path > 0 && (
+        path[len_path - 1] == '\r' || 
+        path[len_path - 1] == ' ' || 
+        path[len_path - 1] == '\n'
+    )){
+        path[--len_path] = '\0'; 
+    }
+
+
+    if (!method || !path ) {
+        free(parsed_request);
+        return NULL;
+    }
+
+    parsed_request->method = parse_method(strdup(method));
+    parsed_request->path = strdup(path);
+
+    return parsed_request;
+}
+
+
+void* handle_request(void* arg){ 
+    int client_socket = *(int*)arg; 
+    free(arg);
+
+    char buffer[BUFFER_SIZE] = {0}; 
+    char response_header[512];
+    char logs_buffer[256] ; 
+    ssize_t bytes_read = read(client_socket, buffer, BUFFER_SIZE - 1);
+    
+    if (bytes_read < 0) {
+        perror("Read error");
+        close(client_socket);
+        return NULL;
+    }
+    
+    if (bytes_read == 0) {
+        printf("Client disconnected without sending data\n");
+        close(client_socket);
+        return NULL;
+    }
+    
+    http_request* request = parse_request(buffer); 
+    http_response response = not_found_handler(NULL);  /* Default 404 */
+    
+    for(int i = 0; i < NUM_ROUTES_VALUE; i++) {
+        if(strcmp(request->path, routes[i].path) == 0) {
+            /* Find handler for this method */
+            for(int j = 0; j < routes[i].handler_count; j++) {
+                if(routes[i].handlers[j].method == request->method) {
+                    response = routes[i].handlers[j].callback(request);
+                    goto send_response;
+                }
+            }
+            /* Method not allowed */
+            response = method_not_allowed_handler(request); 
+            goto send_response;
+        }
+    }       
+
+    send_response:
+    snprintf(response_header, sizeof(response_header),
+        "HTTP/1.1 %d OK\r\n"
+        "Content-Type: %s\r\n"
+        "Content-Length: %lu\r\n"
+        "\r\n",
+        response.status_code,
+        response.content_type,
+        strlen(response.body));
+    
+    write(client_socket, response_header, strlen(response_header));
+    write(client_socket, response.body, strlen(response.body));
+
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &client_addr.sin_addr, ip_str, sizeof(ip_str));
+    const char* method_str = http_method_to_str(request->method); 
+    
+    snprintf(logs_buffer, sizeof(logs_buffer), "%s - \"%s %s\" - %d",
+        ip_str,
+        method_str,
+        request->path,
+        response.status_code
+    );
+
+    print_log(logs_buffer);
+        
+    free(response.body);
+    close(client_socket);
+
+    return NULL;
+}
+
+
+
+int main() { 
+    int client_socket ; 
+    char logs_buffer[256] ; 
+
+
+    print_startup_banner(PORT , "/"); 
+    signal(SIGINT, handle_shutdown) ; 
+    start_server(); 
+
+
+    while(1) { 
+        client_socket = accept(socket_fd, (struct sockaddr*)&client_addr, &addrlen); 
+        if (client_socket < 0) {
+            perror("Accept failed");
+            continue;
+        }
+
+        pthread_t thread_id;
+        int* socket_ptr = malloc(sizeof(int));
+        *socket_ptr = client_socket;
+        
+        if (pthread_create(&thread_id, NULL, handle_request, socket_ptr) < 0) {
+            perror("Thread creation failed");
+            close(client_socket);
+            free(socket_ptr);
+            continue;
+        }
+        
+
+        pthread_detach(thread_id);
+    }
+
+    close(socket_fd); 
+}
