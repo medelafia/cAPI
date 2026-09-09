@@ -193,6 +193,9 @@ void* handle_request(void* arg){
     send_response:
     snprintf(response_header, sizeof(response_header),
         "HTTP/1.1 %d OK\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "Access-Control-Allow-Methods: GET, POST, DELETE, PATCH, OPTIONS\r\n"
+        "Access-Control-Allow-Headers: Content-Type\r\n"
         "Content-Type: %s\r\n"
         "Content-Length: %lu\r\n"
         "\r\n",

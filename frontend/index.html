@@ -466,8 +466,7 @@
         // Load jokes when page opens
         document.addEventListener('DOMContentLoaded', () => {
             fetchJokes();
-            // Refresh jokes every 5 seconds
-            setInterval(fetchJokes, 10000);
+            setInterval(fetchJokes, 60000);
         });
     </script>
 </body>
