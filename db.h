@@ -8,9 +8,9 @@
 
 
 sqlite3 *initDB(); 
-char* getJokes(sqlite3* db); 
-bool createNewJoke(sqlite3* db, char* data);
-bool deleteJokeById(sqlite3* db, int id);
-bool jokeCount(sqlite3* db);
+char* getJokes(); 
+bool createNewJoke(char* data , char* error, int* status_code);
+bool deleteJokeById(char* data, char* error, int * status_code);
+bool jokeCount(char* error, int * status_code); 
 
 #endif

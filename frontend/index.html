@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cAPI - Jokes Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            padding: 8px 16px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .jokes-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .jokes-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .joke-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .joke-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateX(5px);
+        }
+
+        .joke-id {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .joke-content {
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .joke-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .stats {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>cAPI Jokes</h1>
+            <p>A modern REST API for managing your jokes</p>
+        </header>
+
+        <div id="message" class="message"></div>
+
+        <div class="card stats">
+            <div class="stat-box">
+                <div class="stat-number" id="jokeCount">0</div>
+                <div class="stat-label">Total Jokes</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">✓</div>
+                <div class="stat-label">API Status: Online</div>
+            </div>
+        </div>
+
+        <div class="card form-section">
+            <h2>Add New Joke</h2>
+            <form id="jokeForm">
+                <div class="form-group">
+                    <label for="jokeInput">Your Joke:</label>
+                    <textarea id="jokeInput" placeholder="Enter your funny joke here..." required></textarea>
+                </div>
+                <button type="submit">Add Joke 🚀</button>
+            </form>
+        </div>
+
+        <div class="card jokes-section">
+            <h2>All Jokes</h2>
+            <div id="jokesList" class="jokes-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading jokes...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/jokes';
+
+        // Show message (success or error)
+        function showMessage(text, type = 'success') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message show ${type}`;
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 8000);
+        }
+
+        // Fetch all jokes from API
+        async function fetchJokes() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const jokes = await response.json();
+                displayJokes(jokes);
+                updateJokeCount(jokes.length);
+            } catch (error) {
+                console.error('Error fetching jokes:', error);
+                document.getElementById('jokesList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h3>Could not load jokes</h3>
+                        <p>Make sure the API server is running on http://localhost:8080</p>
+                    </div>
+                `;
+                showMessage('Failed to load jokes. Is the server running?', 'error');
+            }
+        }
+
+        // Display jokes on the page
+        function displayJokes(jokes) {
+            const jokesList = document.getElementById('jokesList');
+
+            if (!jokes || jokes.length === 0) {
+                jokesList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <h3>No jokes yet</h3>
+                        <p>Add your first joke above to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            jokesList.innerHTML = jokes.map(joke => `
+                <div class="joke-card">
+                    <span class="joke-id">ID: ${joke.id}</span>
+                    <div class="joke-content">${escapeHtml(joke.joke)}</div>
+                    <div class="joke-actions">
+                        <button class="btn-delete" onclick="deleteJoke(${joke.id})">Delete 🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update joke count
+        function updateJokeCount(count) {
+            document.getElementById('jokeCount').textContent = count;
+        }
+
+        // Add new joke
+        async function addJoke(joke) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ joke: joke })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to add joke');
+                }
+
+                const data = await response.json();
+                showMessage(`Joke added! (ID: ${data.id})`, 'success');
+                document.getElementById('jokeForm').reset();
+                fetchJokes(); // Refresh the list
+            } catch (error) {
+                console.error('Error adding joke:', error);
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // Delete joke
+        async function deleteJoke(id) {
+            if (!confirm('Are you sure you want to delete this joke?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: id })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to delete joke');
+                }
+
+                showMessage('Joke deleted! 🗑️', 'success');
+                fetchJokes(); // Refresh the list
+            } catch (error) {
+                console.error('Error deleting joke:', error);
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Handle form submission
+        document.getElementById('jokeForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const joke = document.getElementById('jokeInput').value.trim();
+            if (joke) {
+                addJoke(joke);
+            }
+        });
+
+        // Load jokes when page opens
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchJokes();
+            // Refresh jokes every 5 seconds
+            setInterval(fetchJokes, 10000);
+        });
+    </script>
+</body>
+</html>

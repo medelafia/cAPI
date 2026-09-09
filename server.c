@@ -51,6 +51,7 @@ void print_log(const char *message)
 void handle_shutdown(int sig) {
     print_log("Shutting down server...");
     close(socket_fd);
+    sqlite3_close(app_ctx->db);
     exit(0);
 }
 
@@ -103,43 +104,50 @@ void print_startup_banner(int port, const char* base_dir) {
     fflush(stdout);
 }
 
+struct http_request* parse_request(char* request_data) {
+    /* Allocate memory for request object */
+    http_request* parsed_request = malloc(sizeof(http_request));
+    if (!parsed_request) return NULL;
+    
+    char* buffer = malloc(strlen(request_data) + 1);
+    strcpy(buffer, request_data);
+    
 
-struct http_request* parse_request(char * request_data) { 
-    http_request* parsed_request = malloc(sizeof(http_request));; 
-    if (!parsed_request) {
-        return NULL; // handle allocation failure
-    }
-
-    char* first_line = strtok(request_data , "\r\n");
-    if (!first_line) {
+    char* split_point = strstr(buffer, "\r\n\r\n");
+    if (!split_point) {
+        printf("ERROR: No header/body separator found\n");
         free(parsed_request);
+        free(buffer);
         return NULL;
     }
-
-    char* method = strtok(first_line, " ");
-    char* path = strtok(NULL, " ");
-
-    while(*path == ' ' ) ++path; 
-
-    int len_path = strlen(path); 
-    while(len_path > 0 && (
-        path[len_path - 1] == '\r' || 
-        path[len_path - 1] == ' ' || 
-        path[len_path - 1] == '\n'
-    )){
-        path[--len_path] = '\0'; 
-    }
-
-
-    if (!method || !path ) {
+    
+    *split_point = '\0';              /* End the header string */
+    char* headers = buffer;
+    char* body = split_point + 4;     /* Skip past "\r\n\r\n" */
+    
+    /* Empty body for GET requests */
+    if (*body == '\0') body = NULL;
+    
+    char method[16] = {0};
+    char path[256] = {0};
+    char version[16] = {0};
+    
+    int items = sscanf(headers, "%15s %255s %15s", method, path, version);
+    
+    if (items != 3) {
+        printf("ERROR: Could not parse request line\n");
         free(parsed_request);
+        free(buffer);
         return NULL;
     }
-
-    parsed_request->method = parse_method(strdup(method));
-    parsed_request->path = strdup(path);
-
-    return parsed_request;
+    
+    parsed_request->method = parse_method(method);      /* Convert to enum */
+    parsed_request->path = strdup(path);                /* Copy path */
+    parsed_request->body = body ? strdup(body) : NULL;  /* Copy body if exists */
+    
+    free(buffer);  /* Free the temporary copy */
+    
+    return parsed_request;  /* Return the filled request object */
 }
 
 
@@ -220,10 +228,13 @@ int main() {
     int client_socket ; 
     char logs_buffer[256] ; 
 
+    sqlite3* db = initDB();
 
+    init_app_context(db, PORT, "0.0.0.0"); 
     print_startup_banner(PORT , "/"); 
     signal(SIGINT, handle_shutdown) ; 
     start_server(); 
+    
 
 
     while(1) { 

@@ -1,7 +1,6 @@
 // handlers.c
 #include "controllers.h"
-
-
+#include "db.h"
 
 
 http_response get_jokes_handler(http_request* request) {
@@ -18,11 +17,54 @@ http_response get_jokes_handler(http_request* request) {
 
 http_response post_jokes_handler(http_request* request) {
     /* Parse body, save to DB, etc */
-    char* json_data = cJSON_Print(cJSON_CreateObject());
-    
+    char * body= malloc(150); 
+    char* error = malloc(100); 
+    int* status_code ; 
+    bool inserted = createNewJoke(request->body, error , status_code);   
+
+    if(!inserted) { 
+        snprintf(body, 255, "{\"error\": \"%s\"}", error) ; 
+        http_response resp = {
+            .status_code = *status_code,
+            .body = body,
+            .content_type = "application/json"
+        };
+        free(status_code);
+        return resp; 
+    }
+
+    snprintf(body, 100, "{ \"message\" : \"created\"}");
     http_response resp = {
         .status_code = 201,
-        .body = json_data,
+        .body = body,
+        .content_type = "application/json"
+    };
+    
+    return resp;
+}
+
+http_response delete_joke_handler(http_request* request) {
+    /* Parse body, save to DB, etc */
+    char * body= malloc(150); 
+    char* error = malloc(100); 
+    int* status_code ; 
+    bool inserted = deleteJokeById(request->body, error , status_code);   
+
+    if(!inserted) { 
+        snprintf(body, 255, "{\"error\": \"%s\"}", error) ; 
+        http_response resp = {
+            .status_code = *status_code,
+            .body = body,
+            .content_type = "application/json"
+        };
+        free(status_code);
+        return resp; 
+    }
+
+    snprintf(body, 100, "{ \"message\" : \"deleted\"}");
+    http_response resp = {
+        .status_code = 200,
+        .body = body,
         .content_type = "application/json"
     };
     

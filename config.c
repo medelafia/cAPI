@@ -2,17 +2,26 @@
 #include "config.h"
 #define NUM_ROUTES 1
 
+int NUM_ROUTES_VALUE = NUM_ROUTES;
+app_context* app_ctx = NULL;
+
+void init_app_context(sqlite3* db, int port, const char* host) {
+    app_ctx = malloc(sizeof(app_context));
+    app_ctx->db = db;
+    app_ctx->port = port;
+    app_ctx->host = host;
+}
 struct handler jokes_handlers[] = {
     {GET, get_jokes_handler},
-    {POST, post_jokes_handler}
+    {POST, post_jokes_handler}, 
+    {DELETE, delete_joke_handler}
 };
 
-int NUM_ROUTES_VALUE = NUM_ROUTES;
 struct route routes[NUM_ROUTES] = {
     {
         .path = "/api/jokes",
         .handlers = jokes_handlers,
-        .handler_count = 2
+        .handler_count = 3
     }
 };
 
