@@ -10,7 +10,7 @@
 sqlite3 *initDB(); 
 char* getJokes(); 
 bool createNewJoke(char* data , char* error, int* status_code);
-bool deleteJokeById(char* data, char* error, int * status_code);
+bool deleteJokeById(int id, char* error, int * status_code);
 bool jokeCount(char* error, int * status_code); 
 
 #endif

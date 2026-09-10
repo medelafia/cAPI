@@ -1,15 +1,31 @@
 #ifndef COMMON_H
 #define COMMON_H
 #include <string.h>
+#include <stdbool.h>
 
 enum HTTP_Method {
     GET, POST, DELETE, PATCH, UNKNOWN
 };
 
 typedef struct {
+    char* key; 
+    char* value; 
+} query_param; 
+
+typedef struct {
+    char* name;  
+    char* value;  
+} route_param;
+
+
+typedef struct {
     enum HTTP_Method method;
     char* path; 
     char* body;
+    query_param * query_params; 
+    int query_params_count; 
+    route_param * path_params; 
+    int path_params_count; 
 } http_request;
 
 typedef struct {
@@ -29,6 +45,7 @@ struct route {
     char* path;
     struct handler *handlers;
     int handler_count;
+    bool has_path_param; 
 };
 
 enum HTTP_Method parse_method(char* method_str);  

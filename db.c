@@ -96,32 +96,22 @@ bool createNewJoke(char* data, char* error, int * status_code){
     cJSON_Delete(joke);
     return true;    
 }
-bool deleteJokeById(char* data, char* error, int * status_code){
+
+bool deleteJokeById(int id, char* error, int * status_code){
     sqlite3* db = app_ctx->db ; 
     sqlite3_stmt* stmt;
-    const char *sql = "DELETE FROM JOKES WHERE id=?"; 
-    cJSON* json_data = cJSON_Parse(data); 
 
-    cJSON* joke_item = cJSON_GetObjectItem(json_data, "id");
-    if (!joke_item || !joke_item->valueint) {  
-        strcpy(error, "Missing 'id' field:");
-        *status_code = 400; 
-        cJSON_Delete(json_data);
-        return false;
-    }
-    if(sqlite3_prepare_v2(db, sql, -1 , &stmt, NULL) != SQLITE_OK) {
+    const char *sql = "DELETE FROM JOKES WHERE id=?"; 
+    if( sqlite3_prepare_v2(db, sql, -1 , &stmt, NULL) != SQLITE_OK ) {
         sprintf(error, "SQL error: %s\n", sqlite3_errmsg(db));
         *status_code = 500; 
-        cJSON_Delete(json_data);
         return false;
     }
 
-    int id = joke_item->valueint; 
-    if(sqlite3_bind_int(stmt, 1, id) != SQLITE_OK){
+    if( sqlite3_bind_int(stmt, 1, id) != SQLITE_OK ){
         sprintf(error, "SQL error: %s\n", sqlite3_errmsg(db));
         *status_code = 500; 
         sqlite3_finalize(stmt); 
-        cJSON_Delete(json_data);
         return false;
     }
 
@@ -129,14 +119,18 @@ bool deleteJokeById(char* data, char* error, int * status_code){
         sprintf(error, "Execution failed: %s\n", sqlite3_errmsg(db));
         *status_code = 500; 
         sqlite3_finalize(stmt); 
-        cJSON_Delete(json_data);
         return false; 
-    } else {
-        printf("Record inserted successfully.\n");
-    }
+    } 
     
+    if(sqlite3_changes(db) == 0){ 
+        snprintf(error, 256, "Joke not found");
+        *status_code = 404;
+        sqlite3_finalize(stmt); 
+        return false;
+    }
+
+
     sqlite3_finalize(stmt); 
-    cJSON_Delete(json_data);
     return true;    
 }
 bool jokeCount(char* error, int * status_code);

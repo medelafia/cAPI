@@ -1,6 +1,6 @@
 // config.c
 #include "headers/config.h"
-#define NUM_ROUTES 1
+#define NUM_ROUTES 2
 
 int NUM_ROUTES_VALUE = NUM_ROUTES;
 app_context* app_ctx = NULL;
@@ -8,24 +8,35 @@ app_context* app_ctx = NULL;
 
 struct handler jokes_handlers[] = {
     {GET, get_jokes_handler},
-    {POST, post_jokes_handler}, 
-    {DELETE, delete_joke_handler}
+    {POST, post_jokes_handler}
 };
+struct handler jokes_paramterized_handlers[] = { 
+    {DELETE, delete_joke_handler}
+}; 
 
 struct route routes[NUM_ROUTES] = {
     {
         .path = "/api/jokes",
         .handlers = jokes_handlers,
-        .handler_count = 3
+        .handler_count = 3, 
+        .has_path_param = false
+    }, 
+    {
+        .path= "/api/jokes/:id",
+        .handlers = jokes_paramterized_handlers,
+        .handler_count = 2, 
+        .has_path_param = true 
     }
 };
 
 struct route* get_routes(){
     return routes; 
 }
+
 int get_num_routes(){
     return NUM_ROUTES_VALUE; 
 }
+
 void load_config_from_json(char* error){
     FILE *fp = fopen("resources/conf.json", "r");
     if (fp == NULL) {

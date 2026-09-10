@@ -48,9 +48,18 @@ http_response delete_joke_handler(http_request* request) {
     char * body= malloc(150); 
     char* error = malloc(100); 
     int* status_code ; 
-    bool inserted = deleteJokeById(request->body, error , status_code);   
+    int id; 
 
-    if(!inserted) { 
+    for(int i=0; i<request->path_params_count; i++) {
+        if(strcmp(request->path_params[i].name, "id") == 0){
+            printf("DEBUG : value %s\n",request->path_params[i].value ); 
+            id = atoi(request->path_params[i].value); 
+        }
+    }
+
+    bool deleted = deleteJokeById(id, error , status_code);   
+
+    if(!deleted) { 
         snprintf(body, 255, "{\"error\": \"%s\"}", error) ; 
         http_response resp = {
             .status_code = *status_code,

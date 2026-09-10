@@ -1,6 +1,7 @@
-# cAPI - A Lightweight C REST API Framework
+```markdown
+# cAPI - A Lightweight C REST API
 
-A multithreaded HTTP REST API framework written in pure C, designed for building fast, efficient web services with minimal dependencies.
+A multithreaded HTTP REST API written in pure C, designed for building fast, efficient web services with minimal dependencies.
 
 ## ✨ Features
 
@@ -191,7 +192,7 @@ Example log:
 
 ## 🔐 Security Considerations
 
-This framework is designed for learning and small projects. For production use:
+This project is designed for learning and small projects. For production use:
 - Add input validation
 - Implement authentication (JWT, API keys)
 - Add rate limiting
@@ -247,7 +248,7 @@ THE SOFTWARE.
 
 ## 👨‍💻 Author
 
-**Mohamed EL AFIA** - Initial framework design and implementation
+**Mohamed EL AFIA** - Initial project design and implementation
 
 ## 🤝 Contributing
 
@@ -279,3 +280,4 @@ Contributions are welcome! Please:
 ---
 
 **Happy coding! 🚀**
+```

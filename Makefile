@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c99
 LIBS = -lpthread -lsqlite3
 TARGET = c_api
-SOURCES = server.c controllers.c db.c config.c common.c cJSON.c c_api.c
+SOURCES = server.c controllers.c db.c config.c common.c cJSON.c c_api.c logger.c
 OBJECTS = $(SOURCES:.c=.o)
 
 all: $(TARGET)
