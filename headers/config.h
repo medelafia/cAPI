@@ -8,7 +8,7 @@
 typedef struct {
     sqlite3* db;
     int port;
-    const char* host;
+    char host[100];
 } app_context;
 
 extern app_context* app_ctx;
@@ -18,4 +18,6 @@ extern int NUM_ROUTES_VALUE ;
 struct route* get_routes();
 int get_num_routes(); 
 void init_app_context(sqlite3* db, int port, const char* host);
+void load_config_from_json(char* error) ; 
+
 #endif

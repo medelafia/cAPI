@@ -1,5 +1,5 @@
 // common.c
-#include "common.h"
+#include "headers/common.h"
 
 enum HTTP_Method parse_method(char* method_str) {
     if(strcmp(method_str, "GET")==0) return GET; 

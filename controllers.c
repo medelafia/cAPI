@@ -1,6 +1,6 @@
 // handlers.c
-#include "controllers.h"
-#include "db.h"
+#include "headers/controllers.h"
+#include "headers/db.h"
 
 
 http_response get_jokes_handler(http_request* request) {

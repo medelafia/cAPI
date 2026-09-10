@@ -1,16 +1,7 @@
-#include "db.h" 
-#include "config.h"
+#include "headers/db.h" 
+#include "headers/config.h"
 
 
-
-
-int callback(void* data, int argc, char** argv, char** azColName) {
-    for(int i=0; i< argc; i++) {
-
-    }
-
-    return 0; 
-}
 sqlite3 *initDB(){
     sqlite3* db;
     int rc = sqlite3_open("databases/jokes.db", &db) ; 
@@ -18,6 +9,7 @@ sqlite3 *initDB(){
         fprintf(stderr, "Cannot open database : %s", sqlite3_errmsg(db)); 
         return NULL; 
     } 
+    sqlite3_exec(db, "PRAGMA mmap_size=0;", NULL, NULL, NULL);
     const char* sql = "CREATE TABLE IF NOT EXISTS JOKES("
                 "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 "joke TEXT NOT NULL"

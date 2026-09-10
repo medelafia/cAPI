@@ -10,12 +10,11 @@
 #include <signal.h>
 #include <time.h>
 #include <pthread.h>
-#include "db.h"
-#include "common.h"
-#include "config.h"
-#include "controllers.h"
+#include "headers/db.h"
+#include "headers/common.h"
+#include "headers/config.h"
+#include "headers/controllers.h"
 
-#define PORT 8080
 #define BUFFER_SIZE 4096
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
@@ -65,7 +64,7 @@ void start_server() {
     print_log("Socket started successfuly"); 
     
     server_addr.sin_family = AF_INET; 
-    server_addr.sin_port = htons(PORT) ; 
+    server_addr.sin_port = htons(app_ctx->port) ; 
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     print_log("Binding socket to address and port now ..."); 
@@ -82,7 +81,7 @@ void start_server() {
     print_log("Socket listening now ...");
 
 }
-void print_startup_banner(int port, const char* base_dir) {
+void print_startup_banner() {
     time_t now = time(NULL);
     char* time_str = ctime(&now);
     time_str[strcspn(time_str, "\n")] = '\0';
@@ -92,9 +91,8 @@ void print_startup_banner(int port, const char* base_dir) {
     printf(GREEN "*     C HTTP Server\n" RESET);
     printf(GREEN "====================================================\n" RESET);
     printf(BLUE "*     Status       : running\n" RESET);
-    printf(BLUE "*     Port         : %d\n" RESET, port);
-    printf(BLUE "*     Serving from : %s\n" RESET, base_dir);
-    printf(BLUE "*     URL          : http://0.0.0.0:%d/\n" RESET, port);
+    printf(BLUE "*     Port         : %d\n" RESET, app_ctx->port );
+    printf(BLUE "*     URL          : http://%s:%d/\n" RESET,app_ctx->host, app_ctx->port);
     printf(BLUE "*     PID          : %d\n" RESET, getpid());
     printf(BLUE "*     Started at   : %s\n" RESET, time_str);
     printf(BLUE "*     Author at   : Mohamed EL AFIA\n" RESET);
@@ -112,7 +110,6 @@ struct http_request* parse_request(char* request_data) {
     char* buffer = malloc(strlen(request_data) + 1);
     strcpy(buffer, request_data);
     
-
     char* split_point = strstr(buffer, "\r\n\r\n");
     if (!split_point) {
         printf("ERROR: No header/body separator found\n");
@@ -218,28 +215,25 @@ void* handle_request(void* arg){
     );
 
     print_log(logs_buffer);
-        
+    
+    if (request && request->path) free(request->path);
+    if (request && request->body) free(request->body);
+    if (request) free(request);
+
     free(response.body);
     close(client_socket);
 
     return NULL;
 }
 
-
-
-int main() { 
+int loop() { 
     int client_socket ; 
     char logs_buffer[256] ; 
 
-    sqlite3* db = initDB();
-
-    init_app_context(db, PORT, "0.0.0.0"); 
-    print_startup_banner(PORT , "/"); 
+    print_startup_banner(); 
     signal(SIGINT, handle_shutdown) ; 
     start_server(); 
     
-
-
     while(1) { 
         client_socket = accept(socket_fd, (struct sockaddr*)&client_addr, &addrlen); 
         if (client_socket < 0) {
